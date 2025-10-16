@@ -1,0 +1,179 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Task Prioritizer Data Contracts",
+  "description": "JSON Schema definitions for Task Prioritizer application data structures",
+  "definitions": {
+    "TaskDescription": {
+      "type": "object",
+      "description": "Represents the user's input task text",
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "The raw task description entered by user, exactly as entered including whitespace and line breaks",
+          "minLength": 1,
+          "maxLength": 10000
+        }
+      },
+      "required": ["text"],
+      "additionalProperties": false,
+      "examples": [
+        {
+          "text": "Fix the bug in the login form"
+        },
+        {
+          "text": "Implement user authentication\nAdd OAuth2 support"
+        }
+      ]
+    },
+    "Priority": {
+      "type": "string",
+      "description": "The urgency/importance level of the task",
+      "enum": ["HIGH", "MEDIUM", "LOW"]
+    },
+    "Complexity": {
+      "type": "string",
+      "description": "The estimated effort required to complete the task",
+      "enum": ["HIGH", "MEDIUM", "LOW"]
+    },
+    "Category": {
+      "type": "string",
+      "description": "A classification tag for the task",
+      "enum": [
+        "CRITICAL-PATH",
+        "USER-FACING",
+        "SECURITY",
+        "TECHNICAL-DEBT",
+        "FEATURE",
+        "BUG-FIX",
+        "DOCUMENTATION",
+        "TESTING",
+        "INFRASTRUCTURE",
+        "GENERAL"
+      ]
+    },
+    "TaskAnalysis": {
+      "type": "object",
+      "description": "AI-generated prioritization analysis for a task",
+      "properties": {
+        "priority": {
+          "$ref": "#/definitions/Priority"
+        },
+        "categories": {
+          "type": "array",
+          "description": "Classification tags for the task",
+          "items": {
+            "$ref": "#/definitions/Category"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "complexity": {
+          "$ref": "#/definitions/Complexity"
+        },
+        "suggestedOrder": {
+          "type": "string",
+          "description": "Human-readable explanation of when/why to do this task",
+          "minLength": 1
+        }
+      },
+      "required": ["priority", "categories", "complexity", "suggestedOrder"],
+      "additionalProperties": false,
+      "examples": [
+        {
+          "priority": "HIGH",
+          "categories": ["CRITICAL-PATH", "USER-FACING", "SECURITY"],
+          "complexity": "MEDIUM",
+          "suggestedOrder": "Do this before feature work - blocks user access"
+        },
+        {
+          "priority": "LOW",
+          "categories": ["DOCUMENTATION"],
+          "complexity": "LOW",
+          "suggestedOrder": "Schedule during quiet periods or between sprints"
+        }
+      ]
+    },
+    "TaskSubmission": {
+      "type": "object",
+      "description": "Combines user input with analysis results for display",
+      "properties": {
+        "task": {
+          "$ref": "#/definitions/TaskDescription"
+        },
+        "analysis": {
+          "$ref": "#/definitions/TaskAnalysis"
+        }
+      },
+      "required": ["task", "analysis"],
+      "additionalProperties": false,
+      "examples": [
+        {
+          "task": {
+            "text": "Fix the bug in the login form"
+          },
+          "analysis": {
+            "priority": "HIGH",
+            "categories": ["CRITICAL-PATH", "USER-FACING", "SECURITY"],
+            "complexity": "MEDIUM",
+            "suggestedOrder": "Do this before feature work - blocks user access"
+          }
+        }
+      ]
+    },
+    "ValidationError": {
+      "type": "object",
+      "description": "Represents a validation error for user input",
+      "properties": {
+        "valid": {
+          "type": "boolean",
+          "const": false
+        },
+        "error": {
+          "type": "string",
+          "description": "Human-readable error message",
+          "minLength": 1
+        }
+      },
+      "required": ["valid", "error"],
+      "additionalProperties": false,
+      "examples": [
+        {
+          "valid": false,
+          "error": "Please enter a task description"
+        },
+        {
+          "valid": false,
+          "error": "Task description too long (max 10,000 characters)"
+        }
+      ]
+    },
+    "ValidationSuccess": {
+      "type": "object",
+      "description": "Represents successful validation",
+      "properties": {
+        "valid": {
+          "type": "boolean",
+          "const": true
+        }
+      },
+      "required": ["valid"],
+      "additionalProperties": false,
+      "examples": [
+        {
+          "valid": true
+        }
+      ]
+    },
+    "ValidationResult": {
+      "oneOf": [
+        {
+          "$ref": "#/definitions/ValidationSuccess"
+        },
+        {
+          "$ref": "#/definitions/ValidationError"
+        }
+      ]
+    }
+  }
+}
+

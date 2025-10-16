@@ -1,0 +1,25 @@
+# task-prio-ai-workshop Development Guidelines
+
+Auto-generated from all feature plans. Last updated: 2025-10-16
+
+## Active Technologies
+- JavaScript (ES6+) with HTML5 and CSS3 + Vite (build tool and dev server) (001-task-prioritizer)
+
+## Project Structure
+```
+backend/
+frontend/
+tests/
+```
+
+## Commands
+npm test && npm run lint
+
+## Code Style
+JavaScript (ES6+) with HTML5 and CSS3: Follow standard conventions
+
+## Recent Changes
+- 001-task-prioritizer: Added JavaScript (ES6+) with HTML5 and CSS3 + Vite (build tool and dev server)
+
+<!-- MANUAL ADDITIONS START -->
+<!-- MANUAL ADDITIONS END -->

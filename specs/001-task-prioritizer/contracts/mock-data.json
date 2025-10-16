@@ -1,0 +1,57 @@
+{
+  "$schema": "./data-contract.json",
+  "title": "Mock Data for Task Prioritizer",
+  "description": "Hardcoded examples for the initial workshop demo version",
+  "mockAnalyses": {
+    "Fix the bug in the login form": {
+      "priority": "HIGH",
+      "categories": ["CRITICAL-PATH", "USER-FACING", "SECURITY"],
+      "complexity": "MEDIUM",
+      "suggestedOrder": "Do this before feature work - blocks user access"
+    }
+  },
+  "defaultAnalysis": {
+    "priority": "MEDIUM",
+    "categories": ["GENERAL"],
+    "complexity": "MEDIUM",
+    "suggestedOrder": "Review and prioritize based on current sprint goals"
+  },
+  "additionalExamples": {
+    "Write unit tests for payment module": {
+      "priority": "HIGH",
+      "categories": ["TESTING", "CRITICAL-PATH"],
+      "complexity": "HIGH",
+      "suggestedOrder": "Essential before next release - prevents regressions in critical path"
+    },
+    "Update README documentation": {
+      "priority": "LOW",
+      "categories": ["DOCUMENTATION"],
+      "complexity": "LOW",
+      "suggestedOrder": "Schedule during quiet periods or between sprints"
+    },
+    "Refactor legacy API endpoints": {
+      "priority": "MEDIUM",
+      "categories": ["TECHNICAL-DEBT", "INFRASTRUCTURE"],
+      "complexity": "HIGH",
+      "suggestedOrder": "Plan for dedicated refactoring sprint - high effort but not blocking"
+    },
+    "Add dark mode toggle": {
+      "priority": "MEDIUM",
+      "categories": ["FEATURE", "USER-FACING"],
+      "complexity": "MEDIUM",
+      "suggestedOrder": "Nice-to-have enhancement - schedule after critical bugs are resolved"
+    },
+    "Investigate performance bottleneck in search": {
+      "priority": "HIGH",
+      "categories": ["BUG-FIX", "USER-FACING"],
+      "complexity": "MEDIUM",
+      "suggestedOrder": "Impacts user experience significantly - prioritize investigation and fix"
+    }
+  },
+  "notes": {
+    "usage": "The main example 'Fix the bug in the login form' is required by FR-008. Additional examples provided for workshop demonstration and testing different priority/category combinations.",
+    "implementation": "In JavaScript, convert mockAnalyses to an object. Use exact string matching on trimmed task text. Fall back to defaultAnalysis for unmatched inputs.",
+    "extensibility": "Workshop attendees can easily add more examples by extending the mockAnalyses object."
+  }
+}
+
