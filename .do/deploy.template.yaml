@@ -1,0 +1,17 @@
+spec:
+  name: task-prio-ai-workshop
+  region: nyc
+  services:
+  - name: web
+    github:
+      repo: jabba-jedi/task-prio-ai-workshop
+      branch: main
+      deploy_on_push: true
+    build_command: npm run build
+    run_command: npm start
+    http_port: 8080
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    routes:
+    - path: /
+
