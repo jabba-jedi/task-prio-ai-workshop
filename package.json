@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "vite preview --host 0.0.0.0 --port ${PORT:-8080}"
   },
   "keywords": [
     "task",
@@ -17,7 +18,7 @@
   ],
   "author": "",
   "license": "MIT",
-  "devDependencies": {
+  "dependencies": {
     "vite": "^5.4.20"
   }
 }
