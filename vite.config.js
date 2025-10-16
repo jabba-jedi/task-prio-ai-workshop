@@ -12,6 +12,18 @@ export default defineConfig({
     strictPort: false // Try next port if 5173 is taken
   },
   
+  // Preview server configuration (for production builds)
+  preview: {
+    port: 8080,
+    host: '0.0.0.0',
+    // Allow all hosts (needed for DigitalOcean, Vercel, Netlify, etc.)
+    allowedHosts: [
+      'stingray-app-iantr.ondigitalocean.app',
+      '.ondigitalocean.app', // Allow all DigitalOcean apps
+      'localhost'
+    ]
+  },
+  
   // Build configuration
   build: {
     outDir: 'dist',
