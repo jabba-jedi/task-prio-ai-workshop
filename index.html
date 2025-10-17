@@ -295,6 +295,54 @@
       color: #555;
       line-height: 1.6;
     }
+    
+    /* T019 [US2]: Warning Banner Styles */
+    .warning-banner {
+      background-color: #fff3cd;
+      color: #856404;
+      border: 1px solid #ffc107;
+      border-left: 4px solid #ffc107;
+      border-radius: 6px;
+      padding: 0.75rem 1rem;
+      margin-top: 1rem;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      animation: slideIn 0.3s ease-out;
+    }
+    
+    .warning-banner-content {
+      flex: 1;
+    }
+    
+    .warning-banner-close {
+      background: none;
+      border: none;
+      color: #856404;
+      font-size: 1.5rem;
+      cursor: pointer;
+      padding: 0;
+      margin-left: 1rem;
+      line-height: 1;
+      opacity: 0.7;
+      transition: opacity 0.2s ease;
+    }
+    
+    .warning-banner-close:hover {
+      opacity: 1;
+    }
+    
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
   </style>
 </head>
 <body>
@@ -357,6 +405,9 @@
 
     // T004: Import Gemini AI SDK
     import { GoogleGenerativeAI } from '@google/generative-ai';
+    
+    // T008 [US1]: Import Supabase client
+    import { createClient } from '@supabase/supabase-js';
 
     // T054: Workshop comments for clarity
 
@@ -586,6 +637,177 @@ Return ONLY the JSON object:`;
     }
 
     // ==============================================
+    // SUPABASE DATABASE LOGGING FUNCTIONS
+    // ==============================================
+    
+    // T009 [US1]: Supabase client singleton
+    // This function creates a Supabase client instance only once and reuses it
+    // for subsequent database operations. Returns null if credentials are missing.
+    let supabaseClient = null;
+    
+    function getSupabaseClient() {
+      // Return existing client if already initialized
+      if (supabaseClient) {
+        return supabaseClient;
+      }
+      
+      // Load credentials from environment variables
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
+      // Check if both credentials are configured
+      if (!supabaseUrl || !supabaseAnonKey) {
+        console.warn('⚠️ Supabase credentials not configured - database logging disabled');
+        console.warn('💡 To enable logging: Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env');
+        return null;
+      }
+      
+      // Create and cache the client
+      supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+      console.log('✅ Supabase client initialized successfully');
+      return supabaseClient;
+    }
+    
+    // T010 [US1]: Validate task submission data before database insert
+    // This ensures data integrity and catches malformed AI responses early
+    function validateTaskSubmission(taskText, analysis) {
+      const errors = [];
+      
+      // Validate task text
+      if (!taskText || typeof taskText !== 'string') {
+        errors.push('Task text must be a non-empty string');
+      } else if (taskText.trim().length === 0) {
+        errors.push('Task text cannot be blank');
+      }
+      
+      // Validate priority
+      const validPriorities = ['HIGH', 'MEDIUM', 'LOW'];
+      if (!validPriorities.includes(analysis.priority)) {
+        errors.push(`Invalid priority: ${analysis.priority} (must be HIGH, MEDIUM, or LOW)`);
+      }
+      
+      // Validate categories (must be array, can be empty)
+      if (!Array.isArray(analysis.categories)) {
+        errors.push('Categories must be an array');
+      }
+      
+      // Validate complexity
+      const validComplexities = ['HIGH', 'MEDIUM', 'LOW'];
+      if (!validComplexities.includes(analysis.complexity)) {
+        errors.push(`Invalid complexity: ${analysis.complexity} (must be HIGH, MEDIUM, or LOW)`);
+      }
+      
+      // Validate suggested order
+      if (!analysis.suggestedOrder || typeof analysis.suggestedOrder !== 'string') {
+        errors.push('Suggested order must be a non-empty string');
+      } else if (analysis.suggestedOrder.trim().length === 0) {
+        errors.push('Suggested order cannot be blank');
+      }
+      
+      // Throw error if validation fails
+      if (errors.length > 0) {
+        throw new Error(`Validation failed: ${errors.join(', ')}`);
+      }
+      
+      return true;
+    }
+    
+    // T016 [US2]: Show warning banner for database errors
+    // This creates a dismissible warning banner that auto-hides after 5 seconds
+    function showWarning(message) {
+      // Create warning banner element
+      const warningDiv = document.createElement('div');
+      warningDiv.className = 'warning-banner';
+      warningDiv.setAttribute('role', 'alert');
+      warningDiv.setAttribute('aria-live', 'polite');
+      
+      // Add message content
+      const contentDiv = document.createElement('div');
+      contentDiv.className = 'warning-banner-content';
+      contentDiv.textContent = message;
+      warningDiv.appendChild(contentDiv);
+      
+      // Add close button
+      const closeButton = document.createElement('button');
+      closeButton.className = 'warning-banner-close';
+      closeButton.textContent = '×';
+      closeButton.setAttribute('aria-label', 'Close warning');
+      closeButton.onclick = () => warningDiv.remove();
+      warningDiv.appendChild(closeButton);
+      
+      // Insert after results container
+      const resultsContainer = document.getElementById('results-container');
+      resultsContainer.insertAdjacentElement('afterend', warningDiv);
+      
+      // T020 [US2]: Auto-dismiss after 5 seconds
+      setTimeout(() => {
+        if (warningDiv.parentNode) {
+          warningDiv.remove();
+        }
+      }, 5000);
+    }
+    
+    // T011 [US1]: Log task submission to Supabase database
+    // T015 [US2]: Enhanced with comprehensive error handling
+    // This is an async function that inserts the task and AI analysis into the database.
+    // It validates data before insertion and throws errors for the caller to handle.
+    async function logTaskSubmission(taskText, analysis) {
+      // Get Supabase client (may be null if not configured)
+      const supabase = getSupabaseClient();
+      
+      // Silently skip if Supabase is not configured
+      if (!supabase) {
+        return;
+      }
+      
+      try {
+        // Validate data before attempting insert
+        validateTaskSubmission(taskText, analysis);
+        
+        // Prepare insert payload - map AI analysis fields to database columns
+        const payload = {
+          task_text: taskText,
+          priority: analysis.priority,
+          categories: analysis.categories,
+          complexity: analysis.complexity,
+          suggested_order: analysis.suggestedOrder
+          // Note: id and created_at are auto-generated by database
+        };
+        
+        // Insert to Supabase (T013: console logging for debugging)
+        const { data, error } = await supabase
+          .from('task_submissions')
+          .insert([payload]);
+        
+        // T015 [US2]: Check for database errors and re-throw with descriptive message
+        if (error) {
+          // Classify the error type for better debugging
+          let errorType = 'Database error';
+          if (error.code === '23502') {
+            errorType = 'Missing required field';
+          } else if (error.code === '23514') {
+            errorType = 'Invalid field value';
+          } else if (error.code === '42501') {
+            errorType = 'Permission denied (RLS policy)';
+          } else if (error.message.includes('fetch')) {
+            errorType = 'Network error';
+          }
+          
+          throw new Error(`${errorType}: ${error.message}`);
+        }
+        
+        // T013 [US1]: Success logging for debugging
+        console.log('✅ Task logged to database successfully:', data);
+        
+      } catch (error) {
+        // T018 [US2]: Enhanced console warning for debugging
+        console.warn('❌ Database logging failed:', error.message);
+        console.warn('💡 This does not affect the AI analysis - the app continues working normally');
+        throw error; // Re-throw for caller to handle
+      }
+    }
+
+    // ==============================================
     // TASK ANALYSIS FUNCTIONS
     // ==============================================
 
@@ -756,6 +978,15 @@ Return ONLY the JSON object:`;
         
         // T022: Display results (existing function works with AI analysis)
         displayResults(taskText, analysis);
+        
+        // T012 [US1]: Fire-and-forget database logging
+        // T017 [US2]: Enhanced with user-facing warning
+        // This logs the task submission to Supabase AFTER displaying results
+        // The .catch() handles errors without blocking the UI
+        logTaskSubmission(taskText, analysis).catch(error => {
+          // T017 [US2]: Show subtle warning banner to user
+          showWarning('Note: Task history could not be saved at this time');
+        });
         
       } catch (error) {
         // DEBUG: Log the actual error

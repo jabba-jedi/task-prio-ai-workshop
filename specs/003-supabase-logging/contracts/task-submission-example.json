@@ -1,0 +1,24 @@
+{
+  "description": "Example task submission record as stored in the database",
+  "example_record": {
+    "id": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+    "task_text": "Optimize database queries for faster load times",
+    "priority": "HIGH",
+    "categories": [
+      "PERFORMANCE",
+      "TECHNICAL-DEBT",
+      "USER-FACING"
+    ],
+    "complexity": "MEDIUM",
+    "suggested_order": "Address soon to prevent performance degradation affecting user experience",
+    "created_at": "2025-10-17T14:23:45.678Z"
+  },
+  "notes": [
+    "task_text preserves exact user input including whitespace and special characters",
+    "priority and complexity are always one of: HIGH, MEDIUM, or LOW",
+    "categories is an array that may contain 0 to many tags",
+    "suggested_order is a free-form text explanation from the AI",
+    "created_at uses ISO 8601 format with timezone (UTC)"
+  ]
+}
+

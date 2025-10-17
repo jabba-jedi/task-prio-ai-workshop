@@ -1,0 +1,61 @@
+{
+  "table_name": "task_submissions",
+  "description": "Stores task analysis submissions with original text and AI-generated insights",
+  "columns": [
+    {
+      "name": "id",
+      "type": "uuid",
+      "constraints": ["PRIMARY KEY", "DEFAULT uuid_generate_v4()"],
+      "description": "Auto-generated unique identifier for each submission"
+    },
+    {
+      "name": "task_text",
+      "type": "text",
+      "constraints": ["NOT NULL"],
+      "description": "Original task description exactly as entered by the user"
+    },
+    {
+      "name": "priority",
+      "type": "text",
+      "constraints": ["NOT NULL", "CHECK (priority IN ('HIGH', 'MEDIUM', 'LOW'))"],
+      "description": "AI-determined priority level: HIGH, MEDIUM, or LOW"
+    },
+    {
+      "name": "categories",
+      "type": "text[]",
+      "constraints": ["NOT NULL"],
+      "description": "Array of classification tags assigned by AI (e.g., CRITICAL-PATH, USER-FACING, SECURITY)"
+    },
+    {
+      "name": "complexity",
+      "type": "text",
+      "constraints": ["NOT NULL", "CHECK (complexity IN ('HIGH', 'MEDIUM', 'LOW'))"],
+      "description": "AI-assessed complexity level: HIGH, MEDIUM, or LOW"
+    },
+    {
+      "name": "suggested_order",
+      "type": "text",
+      "constraints": ["NOT NULL"],
+      "description": "AI-generated explanation of when and why to prioritize this task"
+    },
+    {
+      "name": "created_at",
+      "type": "timestamptz",
+      "constraints": ["NOT NULL", "DEFAULT now()"],
+      "description": "Timestamp when the submission was logged to the database"
+    }
+  ],
+  "indexes": [
+    {
+      "name": "idx_task_submissions_created_at",
+      "columns": ["created_at"],
+      "description": "Index for efficient time-based queries and sorting"
+    },
+    {
+      "name": "idx_task_submissions_priority",
+      "columns": ["priority"],
+      "description": "Index for filtering by priority level"
+    }
+  ]
+}
+
