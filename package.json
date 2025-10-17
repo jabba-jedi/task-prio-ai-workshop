@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "start": "vite preview --host 0.0.0.0 --port ${PORT:-8080}"
+    "start": "vite preview --host 0.0.0.0 --port ${PORT:-8080}",
+    "screenshot": "node scripts/screenshot.js"
   },
   "keywords": [
     "task",
@@ -20,5 +21,8 @@
   "license": "MIT",
   "dependencies": {
     "vite": "^5.4.20"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.1"
   }
 }
