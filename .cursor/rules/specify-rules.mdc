@@ -4,6 +4,8 @@ Auto-generated from all feature plans. Last updated: 2025-10-16
 
 ## Active Technologies
 - JavaScript (ES6+) with HTML5 and CSS3 + Vite (build tool and dev server) (001-task-prioritizer)
+- JavaScript (ES6+) with HTML5 and CSS3 (existing vanilla JS codebase) + Vite (existing), @google/generative-ai (new, latest version ~0.21.0+) (002-gemini-ai-integration)
+- N/A (no persistence, frontend-only API calls) (002-gemini-ai-integration)
 
 ## Project Structure
 ```
@@ -19,6 +21,7 @@ npm test && npm run lint
 JavaScript (ES6+) with HTML5 and CSS3: Follow standard conventions
 
 ## Recent Changes
+- 002-gemini-ai-integration: Added JavaScript (ES6+) with HTML5 and CSS3 (existing vanilla JS codebase) + Vite (existing), @google/generative-ai (new, latest version ~0.21.0+)
 - 001-task-prioritizer: Added JavaScript (ES6+) with HTML5 and CSS3 + Vite (build tool and dev server)
 
 <!-- MANUAL ADDITIONS START -->

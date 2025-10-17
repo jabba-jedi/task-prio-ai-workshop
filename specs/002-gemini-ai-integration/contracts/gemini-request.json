@@ -1,0 +1,109 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Gemini API Request Contract",
+  "description": "Structure of the request sent to Google Gemini 1.5 Flash API for task prioritization analysis",
+  "type": "object",
+  "required": ["contents"],
+  "properties": {
+    "contents": {
+      "type": "array",
+      "description": "Array of message turns for the conversation",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["role", "parts"],
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": ["user"],
+            "description": "Message sender role (always 'user' for single-turn requests)"
+          },
+          "parts": {
+            "type": "array",
+            "description": "Array of content parts in the message",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["text"],
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "description": "The prompt text including task description and instructions",
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "generationConfig": {
+      "type": "object",
+      "description": "Optional configuration for response generation",
+      "properties": {
+        "responseMimeType": {
+          "type": "string",
+          "enum": ["application/json"],
+          "description": "Request JSON-formatted response for reliable parsing"
+        },
+        "temperature": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Controls randomness (lower = more deterministic). Recommended: 0.3 for consistent task analysis"
+        },
+        "maxOutputTokens": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8192,
+          "description": "Maximum length of response. Recommended: 1024 for task analysis"
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "description": "Minimal request with only required fields",
+      "value": {
+        "contents": [
+          {
+            "role": "user",
+            "parts": [
+              {
+                "text": "You are a technical task prioritization assistant. Analyze the following work task and determine its priority, categories, complexity, and suggested order.\n\nReturn ONLY a valid JSON object with these exact fields (no additional text):\n\n{\n  \"priority\": \"HIGH\" | \"MEDIUM\" | \"LOW\",\n  \"categories\": [\"CATEGORY1\", \"CATEGORY2\", ...],\n  \"complexity\": \"HIGH\" | \"MEDIUM\" | \"LOW\",\n  \"suggestion\": \"One sentence explaining why this priority makes sense\"\n}\n\nTask to analyze:\nFix the bug in the login form\n\nReturn ONLY the JSON object:"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "description": "Complete request with generation configuration",
+      "value": {
+        "contents": [
+          {
+            "role": "user",
+            "parts": [
+              {
+                "text": "You are a technical task prioritization assistant. Analyze the following work task and determine its priority, categories, complexity, and suggested order.\n\nReturn ONLY a valid JSON object with these exact fields (no additional text):\n\n{\n  \"priority\": \"HIGH\" | \"MEDIUM\" | \"LOW\",\n  \"categories\": [\"CATEGORY1\", \"CATEGORY2\", ...],\n  \"complexity\": \"HIGH\" | \"MEDIUM\" | \"LOW\",\n  \"suggestion\": \"One sentence explaining why this priority makes sense\"\n}\n\nPriority levels:\n- HIGH: Blocks other work, security issues, critical bugs, user-facing failures\n- MEDIUM: Important but not blocking, feature work, refactoring with clear value\n- LOW: Nice-to-have, documentation, minor improvements\n\nCommon categories:\nCRITICAL-PATH, USER-FACING, SECURITY, BUG-FIX, FEATURE, TECHNICAL-DEBT, DOCUMENTATION, TESTING, INFRASTRUCTURE, PERFORMANCE, ACCESSIBILITY\n\nComplexity levels:\n- HIGH: Multi-day effort, requires extensive testing, touches many systems\n- MEDIUM: 1-2 day effort, moderate scope, some dependencies\n- LOW: Hours of work, isolated change, minimal risk\n\nTask to analyze:\nRefactor database connection pooling for better performance\n\nReturn ONLY the JSON object:"
+              }
+            ]
+          }
+        ],
+        "generationConfig": {
+          "responseMimeType": "application/json",
+          "temperature": 0.3,
+          "maxOutputTokens": 1024
+        }
+      }
+    }
+  ],
+  "notes": [
+    "The @google/generative-ai SDK handles authentication via API key (passed to GoogleGenerativeAI constructor)",
+    "The prompt text should be constructed by the application to include both instructions and the user's task description",
+    "Using responseMimeType: 'application/json' ensures the response is valid JSON without additional text",
+    "Temperature of 0.3 provides consistent results while allowing some variation in category selection",
+    "The SDK internally handles the HTTP request to Gemini API endpoints"
+  ]
+}
+

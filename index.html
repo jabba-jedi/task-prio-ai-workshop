@@ -344,7 +344,7 @@
     </div>
   </main>
   
-  <script>
+  <script type="module">
     // ==============================================
     // TASK PRIORITIZER - WORKSHOP DEMO
     // ==============================================
@@ -352,8 +352,11 @@
     // - Vanilla JavaScript (no frameworks)
     // - CSS Grid for responsive layout
     // - Form validation
-    // - Mock data simulation
+    // - Gemini AI integration for task analysis
     // ==============================================
+
+    // T004: Import Gemini AI SDK
+    import { GoogleGenerativeAI } from '@google/generative-ai';
 
     // T054: Workshop comments for clarity
 
@@ -407,6 +410,124 @@
       suggestedOrder: "Review and prioritize based on current sprint goals"
     };
 
+    // ==============================================
+    // GEMINI AI UTILITY FUNCTIONS
+    // ==============================================
+
+    // T005: Construct structured prompt for Gemini API
+    function constructPrompt(taskDescription) {
+      return `You are a technical task prioritization assistant. Analyze the following work task and determine its priority, categories, complexity, and suggested order.
+
+Return ONLY a valid JSON object with these exact fields (no additional text):
+
+{
+  "priority": "HIGH" | "MEDIUM" | "LOW",
+  "categories": ["CATEGORY1", "CATEGORY2", ...],
+  "complexity": "HIGH" | "MEDIUM" | "LOW",
+  "suggestion": "One sentence explaining why this priority makes sense"
+}
+
+Priority levels:
+- HIGH: Blocks other work, security issues, critical bugs, user-facing failures
+- MEDIUM: Important but not blocking, feature work, refactoring with clear value
+- LOW: Nice-to-have, documentation, minor improvements
+
+Common categories:
+CRITICAL-PATH, USER-FACING, SECURITY, BUG-FIX, FEATURE, TECHNICAL-DEBT, DOCUMENTATION, TESTING, INFRASTRUCTURE, PERFORMANCE, ACCESSIBILITY
+
+Complexity levels:
+- HIGH: Multi-day effort, requires extensive testing, touches many systems
+- MEDIUM: 1-2 day effort, moderate scope, some dependencies
+- LOW: Hours of work, isolated change, minimal risk
+
+Task to analyze:
+${taskDescription}
+
+Return ONLY the JSON object:`;
+    }
+
+    // T006: Validate Gemini API response structure
+    function validateGeminiResponse(response) {
+      // Check response is an object
+      if (!response || typeof response !== 'object') {
+        return { valid: false, error: 'Invalid response format' };
+      }
+      
+      // Validate priority field
+      const validPriorities = ['HIGH', 'MEDIUM', 'LOW'];
+      if (!validPriorities.includes(response.priority)) {
+        return { valid: false, error: 'Invalid priority value' };
+      }
+      
+      // Validate categories field
+      if (!Array.isArray(response.categories) || response.categories.length === 0) {
+        return { valid: false, error: 'Invalid categories format' };
+      }
+      
+      // Validate complexity field
+      const validComplexities = ['HIGH', 'MEDIUM', 'LOW'];
+      if (!validComplexities.includes(response.complexity)) {
+        return { valid: false, error: 'Invalid complexity value' };
+      }
+      
+      // Validate suggestion field
+      if (typeof response.suggestion !== 'string' || response.suggestion.trim().length === 0) {
+        return { valid: false, error: 'Missing suggestion text' };
+      }
+      
+      return { valid: true };
+    }
+
+    // T007: Classify API errors and map to user-friendly messages
+    const ERROR_MESSAGES = {
+      API_KEY_MISSING: "Gemini API key not configured. Please add VITE_GEMINI_API_KEY to your .env file.",
+      NETWORK_ERROR: "Unable to connect to Gemini AI. Please check your internet connection and try again.",
+      AUTH_ERROR: "API authentication failed. Please check your Gemini API key.",
+      RATE_LIMIT: "AI service rate limit reached. Please wait a moment before trying again.",
+      PARSE_ERROR: "Received invalid response from AI. Please try again.",
+      VALIDATION_ERROR: "AI response incomplete. Please try again.",
+      UNKNOWN_ERROR: "AI service temporarily unavailable. Please try again shortly."
+    };
+
+    function classifyError(error) {
+      // Check for missing API key
+      if (!import.meta.env.VITE_GEMINI_API_KEY) {
+        return { type: 'API_KEY_MISSING', message: ERROR_MESSAGES.API_KEY_MISSING };
+      }
+      
+      // Check for authentication errors
+      if (error.status === 401 || error.status === 403) {
+        return { type: 'AUTH_ERROR', message: ERROR_MESSAGES.AUTH_ERROR };
+      }
+      
+      // Check for rate limit errors
+      if (error.status === 429) {
+        return { type: 'RATE_LIMIT', message: ERROR_MESSAGES.RATE_LIMIT };
+      }
+      
+      // Check for network errors
+      if (error.message && (error.message.includes('fetch') || error.message.includes('network'))) {
+        return { type: 'NETWORK_ERROR', message: ERROR_MESSAGES.NETWORK_ERROR };
+      }
+      
+      // Check for parse errors
+      if (error instanceof SyntaxError) {
+        return { type: 'PARSE_ERROR', message: ERROR_MESSAGES.PARSE_ERROR };
+      }
+      
+      // Check for validation errors
+      if (error.message && error.message.includes('validation')) {
+        return { type: 'VALIDATION_ERROR', message: ERROR_MESSAGES.VALIDATION_ERROR };
+      }
+      
+      // Default to unknown error
+      return { type: 'UNKNOWN_ERROR', message: ERROR_MESSAGES.UNKNOWN_ERROR };
+    }
+
+    // ==============================================
+    // VALIDATION & DOM ELEMENTS
+    // ==============================================
+
     // T022: Validation function per data-model.md
     function validateTaskInput(text) {
       const trimmed = text.trim();
@@ -439,7 +560,68 @@
     // T043: Debounce flag for rapid submissions
     let isSubmitting = false;
 
-    // T034: Analyze task using mock data lookup
+    // ==============================================
+    // GEMINI API INITIALIZATION
+    // ==============================================
+
+    // T009: Load API key from environment
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+
+    // T011 & T012: Initialize Gemini AI client and model
+    let genAI = null;
+    let model = null;
+
+    if (apiKey) {
+      genAI = new GoogleGenerativeAI(apiKey);
+      model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    }
+
+    // ==============================================
+    // TASK ANALYSIS FUNCTIONS
+    // ==============================================
+
+    // T015-T020: Analyze task using Gemini AI
+    async function analyzeTaskWithGemini(taskDescription) {
+      // T016: Construct API request
+      const prompt = constructPrompt(taskDescription);
+      
+      const request = {
+        contents: [{
+          role: 'user',
+          parts: [{ text: prompt }]
+        }],
+        generationConfig: {
+          responseMimeType: 'application/json',
+          temperature: 0.3,
+          maxOutputTokens: 1024
+        }
+      };
+
+      // T017: Call Gemini API
+      const result = await model.generateContent(request);
+      
+      // T018: Parse JSON response
+      const responseText = result.response.text();
+      const analysis = JSON.parse(responseText);
+      
+      // T019: Validate response
+      const validation = validateGeminiResponse(analysis);
+      if (!validation.valid) {
+        const error = new Error('validation');
+        error.details = validation.error;
+        throw error;
+      }
+      
+      // T020: Return validated analysis
+      return {
+        priority: analysis.priority,
+        categories: analysis.categories,
+        complexity: analysis.complexity,
+        suggestedOrder: analysis.suggestion
+      };
+    }
+
+    // T034: Analyze task using mock data lookup (kept as fallback)
     function analyzeTask(taskDescription) {
       const normalizedText = taskDescription.trim();
       
@@ -520,7 +702,8 @@
     }
 
     // T023: Form submit event handler (T041: supports repeated submissions)
-    function handleSubmit(event) {
+    // T021: Made async to support Gemini API integration
+    async function handleSubmit(event) {
       event.preventDefault();
       
       // T043: Prevent rapid duplicate submissions
@@ -542,20 +725,45 @@
       errorMessage.classList.add('hidden');
       errorMessage.textContent = '';
       
-      // T043: Set submitting flag
+      // T039: Show loading state
       isSubmitting = true;
+      const submitButton = form.querySelector('button[type="submit"]');
+      const originalButtonText = submitButton.textContent;
+      submitButton.disabled = true;
+      submitButton.textContent = 'Analyzing...';
       
-      // Get analysis and display results
-      const analysis = analyzeTask(taskText);
-      displayResults(taskText, analysis);
+      try {
+        // T026-T034: Comprehensive error handling with try-catch
+        let analysis;
+        
+        // Check if API key is configured
+        if (!apiKey || !model) {
+          const errorInfo = classifyError(new Error('API_KEY_MISSING'));
+          throw new Error(errorInfo.message);
+        }
+        
+        // T021: Call Gemini API for analysis
+        analysis = await analyzeTaskWithGemini(taskText);
+        
+        // T022: Display results (existing function works with AI analysis)
+        displayResults(taskText, analysis);
+        
+      } catch (error) {
+        // T027-T033: Error classification and user-friendly messages
+        const errorInfo = classifyError(error);
+        errorMessage.textContent = errorInfo.message;
+        errorMessage.classList.remove('hidden');
+        
+        // T035: Hide results container on error
+        resultsContainer.classList.add('hidden');
+      } finally {
+        // T041: Reset loading state
+        submitButton.disabled = false;
+        submitButton.textContent = originalButtonText;
+        isSubmitting = false;
+      }
       
       // T044: Don't clear textarea (allow easy editing for next submission)
-      // Textarea remains with current text for user convenience
-      
-      // T043: Reset submitting flag after short delay
-      setTimeout(() => {
-        isSubmitting = false;
-      }, 300);
     }
 
     // T026: Event handlers to clear error message

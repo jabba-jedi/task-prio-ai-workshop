@@ -1,0 +1,138 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Gemini API Response Contract",
+  "description": "Expected structure of the task analysis response from Google Gemini 1.5 Flash API",
+  "type": "object",
+  "required": ["priority", "categories", "complexity", "suggestion"],
+  "properties": {
+    "priority": {
+      "type": "string",
+      "enum": ["HIGH", "MEDIUM", "LOW"],
+      "description": "Task urgency level based on business impact and blocking nature"
+    },
+    "categories": {
+      "type": "array",
+      "description": "Array of classification tags relevant to the task",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Z0-9]+(-[A-Z0-9]+)*$",
+        "description": "Uppercase tag with optional hyphens (e.g., CRITICAL-PATH, USER-FACING)"
+      },
+      "uniqueItems": true
+    },
+    "complexity": {
+      "type": "string",
+      "enum": ["HIGH", "MEDIUM", "LOW"],
+      "description": "Estimated effort level based on scope, dependencies, and risk"
+    },
+    "suggestion": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "description": "One sentence explanation of why this priority makes sense (human-readable rationale)"
+    }
+  },
+  "examples": [
+    {
+      "description": "High priority security bug",
+      "value": {
+        "priority": "HIGH",
+        "categories": ["CRITICAL-PATH", "USER-FACING", "SECURITY"],
+        "complexity": "MEDIUM",
+        "suggestion": "Do this before feature work - blocks user access"
+      }
+    },
+    {
+      "description": "Medium priority feature work",
+      "value": {
+        "priority": "MEDIUM",
+        "categories": ["FEATURE", "USER-FACING"],
+        "complexity": "MEDIUM",
+        "suggestion": "Nice-to-have enhancement - schedule after critical bugs are resolved"
+      }
+    },
+    {
+      "description": "Low priority documentation task",
+      "value": {
+        "priority": "LOW",
+        "categories": ["DOCUMENTATION"],
+        "complexity": "LOW",
+        "suggestion": "Schedule during quiet periods or between sprints"
+      }
+    },
+    {
+      "description": "High priority performance investigation",
+      "value": {
+        "priority": "HIGH",
+        "categories": ["BUG-FIX", "USER-FACING", "PERFORMANCE"],
+        "complexity": "MEDIUM",
+        "suggestion": "Impacts user experience significantly - prioritize investigation and fix"
+      }
+    },
+    {
+      "description": "Medium priority technical debt",
+      "value": {
+        "priority": "MEDIUM",
+        "categories": ["TECHNICAL-DEBT", "INFRASTRUCTURE"],
+        "complexity": "HIGH",
+        "suggestion": "Plan for dedicated refactoring sprint - high effort but not blocking"
+      }
+    }
+  ],
+  "commonCategories": [
+    "CRITICAL-PATH",
+    "USER-FACING",
+    "SECURITY",
+    "BUG-FIX",
+    "FEATURE",
+    "TECHNICAL-DEBT",
+    "DOCUMENTATION",
+    "TESTING",
+    "INFRASTRUCTURE",
+    "PERFORMANCE",
+    "ACCESSIBILITY",
+    "REFACTORING",
+    "DEPLOYMENT",
+    "MONITORING"
+  ],
+  "validationRules": [
+    "priority MUST be exactly one of: HIGH, MEDIUM, LOW (uppercase)",
+    "categories MUST be a non-empty array of strings",
+    "Each category SHOULD follow UPPERCASE-WITH-HYPHENS format",
+    "complexity MUST be exactly one of: HIGH, MEDIUM, LOW (uppercase)",
+    "suggestion MUST be a non-empty string, typically one sentence",
+    "All fields are required - missing fields should result in validation error"
+  ],
+  "errorScenarios": [
+    {
+      "scenario": "Invalid priority value",
+      "example": {"priority": "URGENT", "categories": ["BUG-FIX"], "complexity": "LOW", "suggestion": "Fix soon"},
+      "handling": "Reject response - show 'AI response incomplete' error to user"
+    },
+    {
+      "scenario": "Empty categories array",
+      "example": {"priority": "HIGH", "categories": [], "complexity": "MEDIUM", "suggestion": "Important task"},
+      "handling": "Reject response - show 'AI response incomplete' error to user"
+    },
+    {
+      "scenario": "Missing required field",
+      "example": {"priority": "MEDIUM", "categories": ["FEATURE"], "suggestion": "Nice to have"},
+      "handling": "Reject response - show 'AI response incomplete' error to user"
+    },
+    {
+      "scenario": "Invalid JSON format",
+      "example": "{ priority: HIGH, categories: ['BUG'] }",
+      "handling": "Catch JSON.parse() error - show 'Received invalid response' error to user"
+    }
+  ],
+  "notes": [
+    "This schema represents the expected structure after parsing the Gemini API's JSON response",
+    "The actual Gemini SDK response includes wrapper objects (response.text()) that must be parsed",
+    "The application should validate this structure before displaying results to users",
+    "Using responseMimeType: 'application/json' in the request helps ensure valid JSON responses",
+    "Category names are suggestions - Gemini may create contextually appropriate categories",
+    "The suggestion field provides user-facing explanation of the priority decision"
+  ]
+}
+
