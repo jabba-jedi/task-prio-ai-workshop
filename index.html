@@ -567,13 +567,22 @@ Return ONLY the JSON object:`;
     // T009: Load API key from environment
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
+    // DEBUG: Log API key status (first 10 chars only for security)
+    console.log('🔑 API Key loaded:', apiKey ? `${apiKey.substring(0, 10)}...` : 'NOT FOUND');
+    console.log('📦 All env vars:', import.meta.env);
+
     // T011 & T012: Initialize Gemini AI client and model
     let genAI = null;
     let model = null;
 
     if (apiKey) {
+      console.log('✅ Initializing Gemini AI client...');
       genAI = new GoogleGenerativeAI(apiKey);
-      model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      // Use gemini-2.0-flash-exp for Gemini 2.5 API keys
+      model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+      console.log('✅ Gemini AI client initialized successfully with gemini-2.0-flash-exp');
+    } else {
+      console.error('❌ No API key found in environment variables');
     }
 
     // ==============================================
@@ -749,8 +758,17 @@ Return ONLY the JSON object:`;
         displayResults(taskText, analysis);
         
       } catch (error) {
+        // DEBUG: Log the actual error
+        console.error('❌ Error during API call:', error);
+        console.error('Error details:', {
+          message: error.message,
+          status: error.status,
+          stack: error.stack
+        });
+        
         // T027-T033: Error classification and user-friendly messages
         const errorInfo = classifyError(error);
+        console.log('📋 Classified error:', errorInfo);
         errorMessage.textContent = errorInfo.message;
         errorMessage.classList.remove('hidden');
         
